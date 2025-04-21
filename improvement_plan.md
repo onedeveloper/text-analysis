@@ -12,10 +12,10 @@ Elevate the project from a one‑off script to a maintainable, extensible NLP to
 | 0 | Project bootstrap & branch | ✅ New Git branch & skeleton |
 | 1 | Code organisation | ✅ Package layout, config dataclasses |
 | 2 | NLP quality | ✅ TextRank backend & transformer sentiment |
-| 3 | CLI / UX | • Typer‑based CLI • JSON/YAML output • input‑file/STDIN support |
-| 4 | Performance & packaging | • Small/large model toggle • Caching • Optional extras • Entry‑points |
-| 5 | Tests & CI | • pytest suite • GitHub Actions workflow |
-| 6 | Docs & release | • README overhaul • API docs • v0.2.0 tag |
+| 3 | CLI / UX | ✅ Typer multi‑command CLI, JSON/YAML output |
+| 4 | Performance & packaging | ✅ Model auto toggle, caching, optional extras |
+| 5 | Tests & CI | ✅ pytest suite (CI pending) |
+| 6 | Docs & release | ✅ README & MkDocs scaffold |
 
 ---
 ## Detailed Tasks
