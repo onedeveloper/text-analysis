@@ -139,6 +139,9 @@ class TextAnalyzer:
         """Extract sentiment words from the given spaCy document"""
         sentiment_words = set()
         
+        # Track which words were found in this particular document
+        self.found_sentiment_words = set()  # Store words found in the current text
+        
         # Extract words with notable sentiment scores
         for sent in doc.sents:
             # Check individual tokens
@@ -150,16 +153,29 @@ class TextAnalyzer:
                 
                 # Focus on content words more likely to carry sentiment
                 if token.pos_ in ('ADJ', 'ADV', 'VERB', 'NOUN'):
+                    word = token.text.lower()
                     # Get sentiment score for this word
                     word_score = self.sentiment_analyzer.polarity_scores(token.text)
                     
                     # If compound score exceeds threshold in either direction, add to sentiment words
                     if abs(word_score['compound']) > self.sentiment_threshold:
-                        sentiment_words.add(token.text.lower())
+                        sentiment_words.add(word)
+                        
+                        # Check if this word is also in our lexicon
+                        if word in self.sentiment_words:
+                            self.found_sentiment_words.add(word)
                         
                     # Check for specific word types that often indicate sentiment
                     if token.pos_ == 'ADJ' and abs(word_score['compound']) > 0.2:
-                        sentiment_words.add(token.text.lower())
+                        sentiment_words.add(word)
+                        
+                        # Check if this word is also in our lexicon
+                        if word in self.sentiment_words:
+                            self.found_sentiment_words.add(word)
+                        
+                    # Add our baseline sentiment words if found in text
+                    if word in self.sentiment_words:
+                        self.found_sentiment_words.add(word)
         
         return sentiment_words
     
@@ -302,12 +318,21 @@ def main():
         print("\n" + "="*50)
         print("SENTIMENT WORDS IDENTIFIED")
         print("="*50)
-        print("\nDynamic sentiment words detected in this text:")
-        # Get all unique sentiment words alphabetically sorted
-        sorted_words = sorted(analyzer.sentiment_words)
-        # Print in a compact format, 5 words per line
-        for i in range(0, len(sorted_words), 5):
-            print(", ".join(sorted_words[i:i+5]))
+        print("\nSentiment words detected in this text:")
+        
+        # Get words actually found in the text
+        if hasattr(analyzer, 'found_sentiment_words') and analyzer.found_sentiment_words:
+            # Get sentiment words found in the text
+            sorted_words = sorted(analyzer.found_sentiment_words)
+            
+            # Generate a user-friendly output
+            if sorted_words:
+                for i in range(0, len(sorted_words), 5):
+                    print(", ".join(sorted_words[i:i+5]))
+            else:
+                print("No sentiment words identified in this text.")
+        else:
+            print("No sentiment words identified in this text.")
 
 if __name__ == "__main__":
     main()
