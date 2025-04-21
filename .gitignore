@@ -1,0 +1,7 @@
+# Added by experimental-refactor
+__pycache__/
+text_analysis.egg-info/
+.cache/
+*.spacy
+*.pt
+.venv/ 
