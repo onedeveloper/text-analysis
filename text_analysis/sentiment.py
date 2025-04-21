@@ -16,6 +16,9 @@ except ModuleNotFoundError:  # pragma: no cover
 
 _DEFAULT_MODEL = "distilbert-base-uncased-finetuned-sst-2-english"
 
+# Cache of HF pipelines keyed by model name
+_PIPELINE_CACHE: dict[str, "Any"] = {}
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -38,10 +41,10 @@ def analyze_sentiment(analyzer: "TextAnalyzer", text: str) -> Dict[str, Any]:  #
 
     if use_transformer:
         # Lazily create pipeline and cache on the analyzer instance
-        pipe = getattr(analyzer, "_hf_sentiment_pipe", None)
+        pipe = _PIPELINE_CACHE.get(_DEFAULT_MODEL)
         if pipe is None:
             pipe = _hf_pipeline("sentiment-analysis", model=_DEFAULT_MODEL, device=-1)  # CPU
-            setattr(analyzer, "_hf_sentiment_pipe", pipe)
+            _PIPELINE_CACHE[_DEFAULT_MODEL] = pipe
 
         # Run on each sentence for granularity
         sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
