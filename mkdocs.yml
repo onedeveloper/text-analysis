@@ -1,0 +1,14 @@
+site_name: Text-analysis
+site_url: https://your-org.github.io/text-analysis/
+theme:
+  name: material
+  palette:
+    scheme: default
+nav:
+  - Home: index.md
+  - Usage: usage.md
+plugins:
+  - search
+markdown_extensions:
+  - admonition
+  - codehilite 
