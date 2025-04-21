@@ -78,8 +78,8 @@ app = typer.Typer(add_completion=False, help="Analyse English text for sentiment
 def analyse(
     text: Optional[str] = typer.Argument(None, help="Text to analyse. If omitted, read STDIN."),
     input_file: Optional[Path] = typer.Option(None, "-i", exists=True, readable=True, help="Read text from file."),
-    json_output: bool = typer.Option(False, "-j", help="Output JSON."),
-    yaml_output: bool = typer.Option(False, "-y", help="Output YAML."),
+    json_output: bool = typer.Option(False, "--json", "-j", help="Output JSON."),
+    yaml_output: bool = typer.Option(False, "--yaml", "-y", help="Output YAML."),
     model: str = typer.Option("auto", help="spaCy model: auto | small | large", show_default=True, rich_help_panel="Model"),
     sentiment_backend: str = typer.Option("vader", help="Sentiment backend: vader | transformer", show_default=True, rich_help_panel="Backends"),
     keyphrase_backend: str = typer.Option("default", help="Key‑phrase backend: default | textrank", show_default=True, rich_help_panel="Backends"),
@@ -92,8 +92,8 @@ def analyse(
 def extract(
     text: Optional[str] = typer.Argument(None, help="Text to analyse. If omitted, read STDIN."),
     input_file: Optional[Path] = typer.Option(None, "-i", exists=True, readable=True, help="Read text from file."),
-    json_output: bool = typer.Option(False, "-j", help="Output JSON."),
-    yaml_output: bool = typer.Option(False, "-y", help="Output YAML."),
+    json_output: bool = typer.Option(False, "--json", "-j", help="Output JSON."),
+    yaml_output: bool = typer.Option(False, "--yaml", "-y", help="Output YAML."),
     model: str = typer.Option("auto", help="spaCy model: auto | small | large", show_default=True, rich_help_panel="Model"),
     sentiment_backend: str = typer.Option("vader", help="Sentiment backend: vader | transformer", show_default=True, rich_help_panel="Backends"),
     keyphrase_backend: str = typer.Option("default", help="Key‑phrase backend: default | textrank", show_default=True, rich_help_panel="Backends"),
@@ -106,8 +106,8 @@ def extract(
 def sentiment(
     text: Optional[str] = typer.Argument(None, help="Text to analyse. If omitted, read STDIN."),
     input_file: Optional[Path] = typer.Option(None, "-i", exists=True, readable=True, help="Read text from file."),
-    json_output: bool = typer.Option(False, "-j", help="Output JSON."),
-    yaml_output: bool = typer.Option(False, "-y", help="Output YAML."),
+    json_output: bool = typer.Option(False, "--json", "-j", help="Output JSON."),
+    yaml_output: bool = typer.Option(False, "--yaml", "-y", help="Output YAML."),
     model: str = typer.Option("auto", help="spaCy model: auto | small | large", show_default=True, rich_help_panel="Model"),
     sentiment_backend: str = typer.Option("vader", help="Sentiment backend: vader | transformer", show_default=True, rich_help_panel="Backends"),
     keyphrase_backend: str = typer.Option("default", help="Key‑phrase backend: default | textrank", show_default=True, rich_help_panel="Backends"),
