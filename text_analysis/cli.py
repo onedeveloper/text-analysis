@@ -33,7 +33,7 @@ try:
 except ModuleNotFoundError:  # pragma: no cover
     _has_yaml = False
 
-from .analyzer import TextAnalyzer, analyse
+from .analyzer import TextAnalyzer, analyse as pipeline_analyse
 
 # ---------------------------------------------------------------------------
 # Helper utilities
@@ -143,7 +143,7 @@ def _run_pipeline(command: str, text: Optional[str], **opts):  # noqa: C901 – 
 
     # Execute --------------------------------------------------------------
     if command == "analyse":
-        result = analyse(text_data)
+        result = pipeline_analyse(text_data)
     elif command == "extract":
         result = analyzer.extract_key_phrases(text_data)
     elif command == "sentiment":
