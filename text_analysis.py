@@ -27,6 +27,10 @@ class TextAnalyzer:
         # Get stopwords
         self.stopwords = set(nltk.corpus.stopwords.words('english'))
         
+        # Dynamic sentiment words initialization
+        self.sentiment_threshold = 0.4  # Threshold for considering a word as having strong sentiment
+        self.sentiment_words = self._initialize_sentiment_words()
+        
     def extract_key_phrases(self, text):
         """Extract key phrases and issues from text"""
         # Process text with spaCy
@@ -45,12 +49,17 @@ class TextAnalyzer:
                     if phrase and len(phrase.split()) > 2:  # Only phrases with more than 2 words
                         phrases.append(phrase)
         
-        # Extract sentences with sentiment words
-        sentiment_words = ["feeling", "help", "should", "busy", "concern", "improve", "problem", "issue"]
+        # Extract sentences with sentiment words and update sentiment words dynamically
         sentiment_phrases = []
+        document_sentiment_words = self._extract_sentiment_words(doc)
+        
+        # Update our sentiment words based on the current text
+        self.sentiment_words.update(document_sentiment_words)
+        
+        # Find sentences containing sentiment words
         for sent in doc.sents:
             sent_text = sent.text.strip()
-            if any(word in sent_text.lower() for word in sentiment_words):
+            if any(word in sent_text.lower() for word in self.sentiment_words):
                 sentiment_phrases.append(sent_text)
         
         # Get key issues - looking for specific patterns
@@ -108,6 +117,51 @@ class TextAnalyzer:
         
         # Join the tokens to form a phrase
         return " ".join([token.text for token in phrase_tokens])
+    
+    def _initialize_sentiment_words(self):
+        """Initialize a set of sentiment words from VADER lexicon and common sentiment terms"""
+        # Start with a baseline of common sentiment words
+        baseline_sentiment_words = {"feeling", "help", "should", "busy", "concern", 
+                                    "improve", "problem", "issue", "excellent", "terrible", 
+                                    "frustrat", "worry", "difficult", "solution"}
+        
+        # Get words from VADER lexicon that have strong sentiment
+        lexicon = self.sentiment_analyzer.lexicon
+        strong_sentiment_words = {word for word, score in lexicon.items() 
+                                 if abs(score) > self.sentiment_threshold
+                                 and len(word) > 3  # Filter out very short words
+                                 and '_' not in word}  # Filter out multi-word phrases with underscores
+        
+        # Combine both sets
+        return baseline_sentiment_words.union(strong_sentiment_words)
+    
+    def _extract_sentiment_words(self, doc):
+        """Extract sentiment words from the given spaCy document"""
+        sentiment_words = set()
+        
+        # Extract words with notable sentiment scores
+        for sent in doc.sents:
+            # Check individual tokens
+            for token in sent:
+                # Skip stopwords, punctuation, and very short words
+                if (token.is_stop or token.is_punct or len(token.text) < 4 or
+                    token.text.lower() in self.stopwords):
+                    continue
+                
+                # Focus on content words more likely to carry sentiment
+                if token.pos_ in ('ADJ', 'ADV', 'VERB', 'NOUN'):
+                    # Get sentiment score for this word
+                    word_score = self.sentiment_analyzer.polarity_scores(token.text)
+                    
+                    # If compound score exceeds threshold in either direction, add to sentiment words
+                    if abs(word_score['compound']) > self.sentiment_threshold:
+                        sentiment_words.add(token.text.lower())
+                        
+                    # Check for specific word types that often indicate sentiment
+                    if token.pos_ == 'ADJ' and abs(word_score['compound']) > 0.2:
+                        sentiment_words.add(token.text.lower())
+        
+        return sentiment_words
     
     def _extract_fallback_issues(self, text):
         """Fallback method for extracting issues if our pattern-based approach doesn't find any"""
@@ -202,6 +256,7 @@ def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description='Analyze text for key phrases and sentiment.')
     parser.add_argument('text', nargs='?', help='Text to analyze. If not provided, will prompt for input.')
+    parser.add_argument('--show-sentiment-words', action='store_true', help='Display identified sentiment words')
     args = parser.parse_args()
     
     # Get text from arguments or prompt
@@ -241,6 +296,18 @@ def main():
     print("\nNeutral elements:")
     for element in sentiment["neutral_elements"]:
         print(f"- {element}")
+    
+    # Show sentiment words if requested
+    if args.show_sentiment_words:
+        print("\n" + "="*50)
+        print("SENTIMENT WORDS IDENTIFIED")
+        print("="*50)
+        print("\nDynamic sentiment words detected in this text:")
+        # Get all unique sentiment words alphabetically sorted
+        sorted_words = sorted(analyzer.sentiment_words)
+        # Print in a compact format, 5 words per line
+        for i in range(0, len(sorted_words), 5):
+            print(", ".join(sorted_words[i:i+5]))
 
 if __name__ == "__main__":
     main()
