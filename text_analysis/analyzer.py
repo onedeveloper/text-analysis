@@ -27,9 +27,14 @@ for resource in ("punkt", "vader_lexicon", "stopwords"):
     except LookupError:  # pragma: no cover – runs once per machine
         nltk.download(resource, quiet=True)
 
+# Process‑level spaCy pipeline cache
+_NLP_CACHE: dict[str, spacy.language.Language] = {}
+
 
 class TextAnalyzer:
     """Combine key‑phrase extraction and sentiment analysis."""
+
+    __slots__ = ("nlp", "sentiment_analyzer", "stopwords", "thresholds", "backends", "sentiment_words", "found_sentiment_words", "word_sentiments", "sentiment_threshold")
 
     def __init__(
         self,
@@ -46,13 +51,16 @@ class TextAnalyzer:
                 model = "en_core_web_sm"
 
         # Load selected spaCy model ---------------------------------------
-        try:
-            self.nlp = spacy.load(model)  # type: ignore[assignment]
-        except OSError:
-            # Download on first run – we do it here to keep CLI zero‑config.
-            print(f"[text-analysis] Installing spaCy model {model!r}…", file=sys.stderr)
-            spacy.cli.download(model)
-            self.nlp = spacy.load(model)  # type: ignore[assignment]
+        if model in _NLP_CACHE:
+            self.nlp = _NLP_CACHE[model]
+        else:
+            try:
+                self.nlp = spacy.load(model)  # type: ignore[assignment]
+            except OSError:
+                print(f"[text-analysis] Installing spaCy model {model!r}…", file=sys.stderr)
+                spacy.cli.download(model)
+                self.nlp = spacy.load(model)  # type: ignore[assignment]
+            _NLP_CACHE[model] = self.nlp
 
         # Sentiment analyser (VADER for now).
         self.sentiment_analyzer = SentimentIntensityAnalyzer()
