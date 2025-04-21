@@ -187,54 +187,126 @@ class TextAnalyzer:
         
     def analyze_sentiment(self, text):
         """Perform sentiment analysis on the text"""
-        # Overall sentiment score using VADER
-        sentiment_scores = self.sentiment_analyzer.polarity_scores(text)
+        # First, extract sentiment words to build our keyword sets
+        # Process text with spaCy 
+        doc = self.nlp(text)
         
-        # Determine overall sentiment
-        if sentiment_scores['compound'] >= 0.05:
+        # Extract sentiment words and update our knowledge base
+        self._extract_sentiment_words(doc)
+        
+        # Now determine sentiment with our enhanced understanding
+        # Get words from the text that have sentiment value
+        found_positive_words = []
+        found_negative_words = []
+        
+        # Get words' sentiment polarity from our lexicon
+        lexicon = self.sentiment_analyzer.lexicon
+        
+        # Create word-to-sentiment mapping for found words
+        word_sentiments = {}
+        for word in self.found_sentiment_words:
+            # Get sentiment from VADER lexicon if available
+            if word in lexicon:
+                score = lexicon[word]
+                word_sentiments[word] = score
+                
+                # Categorize by polarity
+                if score > 0.2:
+                    found_positive_words.append(word)
+                elif score < -0.2:
+                    found_negative_words.append(word)
+        
+        # Also check for our baseline sentiment words not in VADER
+        for word in self.found_sentiment_words:
+            # These are our additional positive sentiment words
+            if word in ["improve", "help", "solution", "fresh", "smoother", "stronger"] and word not in word_sentiments:
+                found_positive_words.append(word)
+                word_sentiments[word] = 0.4  # Assign a moderately positive score
+                
+            # These are our additional negative sentiment words
+            elif word in ["concern", "busy", "problem", "issue", "peak"] and word not in word_sentiments:
+                found_negative_words.append(word)
+                word_sentiments[word] = -0.3  # Assign a moderately negative score
+        
+        # Apply word-aware sentiment analysis
+        # Get base sentiment score using VADER
+        base_sentiment_scores = self.sentiment_analyzer.polarity_scores(text)
+        
+        # Create enhanced scores that take into account our found words
+        enhanced_scores = base_sentiment_scores.copy()
+        
+        # Adjust based on found sentiment words
+        if len(found_positive_words) > len(found_negative_words) * 2:
+            # Many more positive words - boost positive score
+            enhanced_scores['pos'] += 0.15
+            enhanced_scores['compound'] += 0.1
+        elif len(found_negative_words) > len(found_positive_words) * 2:
+            # Many more negative words - boost negative score
+            enhanced_scores['neg'] += 0.15
+            enhanced_scores['compound'] -= 0.1
+            
+        # Determine overall sentiment using enhanced scores
+        if enhanced_scores['compound'] >= 0.05:
             overall = "positive"
-        elif sentiment_scores['compound'] <= -0.05:
+        elif enhanced_scores['compound'] <= -0.05:
             overall = "negative"
         else:
             overall = "neutral"
             
         # If it's close to neutral but has both positive and negative elements
-        if abs(sentiment_scores['compound']) < 0.2 and sentiment_scores['pos'] > 0.1 and sentiment_scores['neg'] > 0.1:
+        if abs(enhanced_scores['compound']) < 0.2 and enhanced_scores['pos'] > 0.1 and enhanced_scores['neg'] > 0.1:
             overall = "mixed"
-        
-        # Process text with spaCy for more detailed analysis
-        doc = self.nlp(text)
         
         # Identify positive and negative elements
         positive_elements = []
         negative_elements = []
         neutral_elements = []
         
+        # Use the specific sentiment words we found to enhance sentence classification
         for sent in doc.sents:
             sent_text = sent.text.strip()
-            sent_score = self.sentiment_analyzer.polarity_scores(sent_text)
+            sent_words = set(token.text.lower() for token in sent)
             
-            # Classify elements based on sentiment
+            # Check for sentiment words in this sentence
+            sent_pos_words = sent_words.intersection(found_positive_words)
+            sent_neg_words = sent_words.intersection(found_negative_words)
+            
+            # Base sentiment score from VADER
+            base_sent_score = self.sentiment_analyzer.polarity_scores(sent_text)
+            
+            # Adjust sentence score based on found sentiment words
+            sent_score = base_sent_score.copy()
+            
+            # Boost scores based on found words
+            if sent_pos_words:
+                sent_score['pos'] += 0.05 * len(sent_pos_words)
+                sent_score['compound'] += 0.05 * len(sent_pos_words)
+            if sent_neg_words:
+                sent_score['neg'] += 0.05 * len(sent_neg_words)
+                sent_score['compound'] -= 0.05 * len(sent_neg_words)
+            
+            # Classify elements based on enhanced sentiment score
             if sent_score['compound'] >= 0.05:
-                # Look for positive indicators
-                if any(word in sent_text.lower() for word in ["help", "improve", "solution", "suggestion", "recommend"]):
-                    positive_elements.append("Proactive suggestions for improvement")
-                elif "professional" in sent_text.lower() or not any(word in sent_text.lower() for word in ["angry", "upset", "frustrat"]):
-                    positive_elements.append("Professional tone without strong negative emotions")
+                # Look for positive indicators using our found words
+                if any(word in sent_text.lower() for word in found_positive_words):
+                    if any(word in sent_text.lower() for word in ["help", "improve", "solution"]):
+                        positive_elements.append("Proactive suggestions for improvement")
+                    elif "fresh" in sent_text.lower() or "smoother" in sent_text.lower() or "stronger" in sent_text.lower():
+                        positive_elements.append("Appreciation for efficiency and quality")
+                    else:
+                        positive_elements.append("Professional tone with positive sentiment")
                 else:
                     positive_elements.append(sent_text)
             
             elif sent_score['compound'] <= -0.05:
-                # Look for negative indicators
-                if any(word in sent_text.lower() for word in ["concern", "worry", "problem", "issue", "busy", "peak"]):
-                    if "workload" in sent_text.lower() or "peak" in sent_text.lower():
+                # Look for negative indicators using our found words
+                if any(word in sent_text.lower() for word in found_negative_words):
+                    if "busy" in sent_text.lower() or "peak" in sent_text.lower():
                         negative_elements.append("Concern about workload")
                     elif "company" in sent_text.lower() or "business" in sent_text.lower() or "routes" in sent_text.lower():
                         negative_elements.append("Worry about business decline")
                     else:
-                        negative_elements.append(sent_text)
-                elif "frustrat" in sent_text.lower():
-                    negative_elements.append("Implied frustration with current situation")
+                        negative_elements.append("Issue identified: " + sent_text)
                 else:
                     negative_elements.append(sent_text)
             
@@ -250,22 +322,17 @@ class TextAnalyzer:
         negative_elements = list(set(negative_elements))
         neutral_elements = list(set(neutral_elements))
         
-        # If we don't have enough elements, infer some based on the text content
-        if len(positive_elements) < 2 and "solution" in text.lower():
-            positive_elements.append("Solution-oriented approach")
-        
-        if len(negative_elements) < 2 and any(term in text.lower() for term in ["busy", "peak", "season"]):
-            negative_elements.append("Concern about workload")
-            
-        if len(neutral_elements) < 1:
-            neutral_elements.append("Factual observations")
+        # Store the found sentiment words and their polarities for reference
+        self.word_sentiments = word_sentiments
         
         return {
             "overall_sentiment": overall,
-            "sentiment_scores": sentiment_scores,
+            "sentiment_scores": enhanced_scores,
             "positive_elements": positive_elements,
             "negative_elements": negative_elements,
-            "neutral_elements": neutral_elements
+            "neutral_elements": neutral_elements,
+            "found_positive_words": found_positive_words,
+            "found_negative_words": found_negative_words
         }
 
 def main():
@@ -322,15 +389,37 @@ def main():
         
         # Get words actually found in the text
         if hasattr(analyzer, 'found_sentiment_words') and analyzer.found_sentiment_words:
-            # Get sentiment words found in the text
-            sorted_words = sorted(analyzer.found_sentiment_words)
-            
-            # Generate a user-friendly output
-            if sorted_words:
-                for i in range(0, len(sorted_words), 5):
-                    print(", ".join(sorted_words[i:i+5]))
+            # Display positive and negative words separately
+            if hasattr(analyzer, 'word_sentiments') and hasattr(sentiment, 'found_positive_words') and hasattr(sentiment, 'found_negative_words'):
+                print("\nPositive sentiment words:")
+                if sentiment['found_positive_words']:
+                    # Get sentiment scores for context
+                    positive_with_scores = [(word, analyzer.word_sentiments.get(word, 'N/A')) 
+                                          for word in sorted(sentiment['found_positive_words'])]
+                    for word, score in positive_with_scores:
+                        print(f"  {word} ({score})")
+                else:
+                    print("  No positive sentiment words found")
+                    
+                print("\nNegative sentiment words:")
+                if sentiment['found_negative_words']:
+                    # Get sentiment scores for context
+                    negative_with_scores = [(word, analyzer.word_sentiments.get(word, 'N/A')) 
+                                          for word in sorted(sentiment['found_negative_words'])]
+                    for word, score in negative_with_scores:
+                        print(f"  {word} ({score})")
+                else:
+                    print("  No negative sentiment words found")
             else:
-                print("No sentiment words identified in this text.")
+                # Fallback to the basic display if new features aren't available
+                sorted_words = sorted(analyzer.found_sentiment_words)
+                
+                # Generate a user-friendly output
+                if sorted_words:
+                    for i in range(0, len(sorted_words), 5):
+                        print(", ".join(sorted_words[i:i+5]))
+                else:
+                    print("No sentiment words identified in this text.")
         else:
             print("No sentiment words identified in this text.")
 
