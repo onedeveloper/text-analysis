@@ -652,7 +652,7 @@ wheels = [
 ]
 
 [[package]]
-name = "test"
+name = "text-analysis"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
