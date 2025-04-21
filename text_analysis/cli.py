@@ -62,40 +62,11 @@ def _print_structured(result, *, as_json: bool, as_yaml: bool, no_colour: bool =
 
 
 # ---------------------------------------------------------------------------
-# Typer application & common options
+# Typer application
 # ---------------------------------------------------------------------------
 
 
 app = typer.Typer(add_completion=False, help="Analyse English text for sentiment and key phrases.")
-
-
-def common_options(f):  # decorator to share options between commands
-    f = typer.option("--input-file", "-i", exists=True, readable=True, help="Read text from file.")(f)
-    f = typer.option("--json", "-j", is_flag=True, help="Output JSON.")(f)
-    f = typer.option("--yaml", "-y", is_flag=True, help="Output YAML.")(f)
-    f = typer.option(
-        "--model",
-        help="spaCy model: auto | small | large",
-        default="auto",
-        show_default=True,
-        rich_help_panel="Model",
-    )(f)
-    f = typer.option(
-        "--sentiment-backend",
-        help="Sentiment backend: vader | transformer",
-        default="vader",
-        show_default=True,
-        rich_help_panel="Backends",
-    )(f)
-    f = typer.option(
-        "--keyphrase-backend",
-        help="Key‑phrase backend: default | textrank",
-        default="default",
-        show_default=True,
-        rich_help_panel="Backends",
-    )(f)
-    f = typer.option("--no-colour", is_flag=True, help="Disable rich colours.")(f)
-    return f
 
 
 # ---------------------------------------------------------------------------
@@ -104,30 +75,45 @@ def common_options(f):  # decorator to share options between commands
 
 
 @app.command(help="Run full analysis (key phrases + sentiment).")
-@common_options
 def analyse_cmd(
     text: Optional[str] = typer.Argument(None, help="Text to analyse. If omitted, read STDIN."),
-    **kwargs,
+    input_file: Optional[Path] = typer.Option(None, "-i", exists=True, readable=True, help="Read text from file."),
+    json_output: bool = typer.Option(False, "-j", help="Output JSON."),
+    yaml_output: bool = typer.Option(False, "-y", help="Output YAML."),
+    model: str = typer.Option("auto", help="spaCy model: auto | small | large", show_default=True, rich_help_panel="Model"),
+    sentiment_backend: str = typer.Option("vader", help="Sentiment backend: vader | transformer", show_default=True, rich_help_panel="Backends"),
+    keyphrase_backend: str = typer.Option("default", help="Key‑phrase backend: default | textrank", show_default=True, rich_help_panel="Backends"),
+    no_colour: bool = typer.Option(False, "--no-colour", help="Disable rich colours."),
 ):
-    _run_pipeline("analyse", text, **kwargs)
+    _run_pipeline("analyse", text, input_file=input_file, json=json_output, yaml=yaml_output, model=model, sentiment_backend=sentiment_backend, keyphrase_backend=keyphrase_backend, no_colour=no_colour)
 
 
 @app.command(help="Extract key phrases only.")
-@common_options
 def extract(
     text: Optional[str] = typer.Argument(None, help="Text to analyse. If omitted, read STDIN."),
-    **kwargs,
+    input_file: Optional[Path] = typer.Option(None, "-i", exists=True, readable=True, help="Read text from file."),
+    json_output: bool = typer.Option(False, "-j", help="Output JSON."),
+    yaml_output: bool = typer.Option(False, "-y", help="Output YAML."),
+    model: str = typer.Option("auto", help="spaCy model: auto | small | large", show_default=True, rich_help_panel="Model"),
+    sentiment_backend: str = typer.Option("vader", help="Sentiment backend: vader | transformer", show_default=True, rich_help_panel="Backends"),
+    keyphrase_backend: str = typer.Option("default", help="Key‑phrase backend: default | textrank", show_default=True, rich_help_panel="Backends"),
+    no_colour: bool = typer.Option(False, "--no-colour", help="Disable rich colours."),
 ):
-    _run_pipeline("extract", text, **kwargs)
+    _run_pipeline("extract", text, input_file=input_file, json=json_output, yaml=yaml_output, model=model, sentiment_backend=sentiment_backend, keyphrase_backend=keyphrase_backend, no_colour=no_colour)
 
 
 @app.command(help="Sentiment analysis only.")
-@common_options
 def sentiment(
     text: Optional[str] = typer.Argument(None, help="Text to analyse. If omitted, read STDIN."),
-    **kwargs,
+    input_file: Optional[Path] = typer.Option(None, "-i", exists=True, readable=True, help="Read text from file."),
+    json_output: bool = typer.Option(False, "-j", help="Output JSON."),
+    yaml_output: bool = typer.Option(False, "-y", help="Output YAML."),
+    model: str = typer.Option("auto", help="spaCy model: auto | small | large", show_default=True, rich_help_panel="Model"),
+    sentiment_backend: str = typer.Option("vader", help="Sentiment backend: vader | transformer", show_default=True, rich_help_panel="Backends"),
+    keyphrase_backend: str = typer.Option("default", help="Key‑phrase backend: default | textrank", show_default=True, rich_help_panel="Backends"),
+    no_colour: bool = typer.Option(False, "--no-colour", help="Disable rich colours."),
 ):
-    _run_pipeline("sentiment", text, **kwargs)
+    _run_pipeline("sentiment", text, input_file=input_file, json=json_output, yaml=yaml_output, model=model, sentiment_backend=sentiment_backend, keyphrase_backend=keyphrase_backend, no_colour=no_colour)
 
 
 # ---------------------------------------------------------------------------
