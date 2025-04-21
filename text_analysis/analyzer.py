@@ -33,12 +33,19 @@ class TextAnalyzer:
 
     def __init__(
         self,
-        model: str = "en_core_web_trf",
+        model: str = "auto",
         *,
         thresholds: Thresholds = DEFAULT_THRESHOLDS,
         backends: Backends = DEFAULT_BACKENDS,
     ) -> None:
-        # Load spaCy model.
+        # Resolve "auto" model choice -------------------------------------
+        if model == "auto":
+            if spacy.prefer_gpu():
+                model = "en_core_web_trf"
+            else:
+                model = "en_core_web_sm"
+
+        # Load selected spaCy model ---------------------------------------
         try:
             self.nlp = spacy.load(model)  # type: ignore[assignment]
         except OSError:

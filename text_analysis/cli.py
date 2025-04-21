@@ -10,7 +10,7 @@ Common options:
   •  `--input-file/-i PATH`  read text from file
   •  `TEXT` argument         read text directly or, if omitted, STDIN
   •  `--json/--yaml`         choose structured output format
-  •  `--model`               spaCy model: small | large  (default: large)
+  •  `--model`               spaCy model: auto | small | large  (default: auto)
   •  `--sentiment-backend`   vader | transformer
   •  `--keyphrase-backend`   default | textrank
   •  `--no-colour`           disable rich colours
@@ -75,8 +75,8 @@ def common_options(f):  # decorator to share options between commands
     f = typer.option("--yaml", "-y", is_flag=True, help="Output YAML.")(f)
     f = typer.option(
         "--model",
-        help="spaCy model: small | large",
-        default="large",
+        help="spaCy model: auto | small | large",
+        default="auto",
         show_default=True,
         rich_help_panel="Model",
     )(f)
@@ -139,11 +139,13 @@ def _run_pipeline(command: str, text: Optional[str], **opts):  # noqa: C901 – 
     text_data = _read_text_arg(text, opts.pop("input_file"))
 
     # Map model choice -----------------------------------------------------
+    model_arg = opts.pop("model")
     model_map = {
         "small": "en_core_web_sm",
         "large": "en_core_web_trf",
+        "auto": "auto",
     }
-    model_name = model_map.get(opts.pop("model"), "en_core_web_trf")
+    model_name = model_map.get(model_arg, "auto")
 
     backends = {
         "sentiment": opts.pop("sentiment_backend"),
