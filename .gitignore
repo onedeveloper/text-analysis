@@ -4,4 +4,6 @@ text_analysis.egg-info/
 .cache/
 *.spacy
 *.pt
-.venv/ 
+.venv/
+out.json
+feedback.txt 
