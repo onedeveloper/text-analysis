@@ -74,8 +74,8 @@ app = typer.Typer(add_completion=False, help="Analyse English text for sentiment
 # ---------------------------------------------------------------------------
 
 
-@app.command(help="Run full analysis (key phrases + sentiment).")
-def analyse_cmd(
+@app.command("analyse", help="Run full analysis (key phrases + sentiment).")
+def analyse(
     text: Optional[str] = typer.Argument(None, help="Text to analyse. If omitted, read STDIN."),
     input_file: Optional[Path] = typer.Option(None, "-i", exists=True, readable=True, help="Read text from file."),
     json_output: bool = typer.Option(False, "-j", help="Output JSON."),
