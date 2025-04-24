@@ -17,6 +17,8 @@ import spacy
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 from .config import DEFAULT_THRESHOLDS, Thresholds, DEFAULT_BACKENDS, Backends
+import spacy.util
+from spacy.cli import download as spacy_download
 from .keyphrases import extract_key_phrases as _extract_key_phrases
 from .sentiment import analyze_sentiment as _analyze_sentiment
 
@@ -54,12 +56,11 @@ class TextAnalyzer:
         if model in _NLP_CACHE:
             self.nlp = _NLP_CACHE[model]
         else:
-            try:
-                self.nlp = spacy.load(model)  # type: ignore[assignment]
-            except OSError:
-                print(f"[text-analysis] Installing spaCy model {model!r}…", file=sys.stderr)
-                spacy.cli.download(model)
-                self.nlp = spacy.load(model)  # type: ignore[assignment]
+            # Ensure model is installed once (persistent cache)
+            if not spacy.util.is_package(model):
+                print(f"[text-analysis] Downloading spaCy model {model!r}…", file=sys.stderr)
+                spacy_download(model, direct=True, quiet=True)
+            self.nlp = spacy.load(model)  # type: ignore[assignment]
             _NLP_CACHE[model] = self.nlp
 
         # Sentiment analyser (VADER for now).
